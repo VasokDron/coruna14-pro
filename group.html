@@ -1,32 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Coruna 14 Pro Fixed</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coruna 14 Pro Edition</title>
+    <style>
+        body { background: #000; color: #00ff00; font-family: monospace; padding: 20px; text-align: center; }
+        #log { text-align: left; background: #111; padding: 10px; border: 1px solid #333; height: 300px; overflow-y: scroll; font-size: 12px; margin-top: 20px; }
+        button { background: #222; color: #00ff00; border: 1px solid #00ff00; padding: 15px; width: 100%; font-size: 18px; cursor: pointer; }
+        button:active { background: #00ff00; color: #000; }
+    </style>
+</head>
+<body>
+    <h2>iPhone 14 Pro / 17.2.1</h2>
+    <button id="pbtn" onclick="runExploit()">START EXPLOIT</button>
+    <div id="log"></div>
+
+    <script src="platform_module.js"></script>
+    <script src="utility_module.js"></script>
     <script>
-        // Примусово фіксуємо платформу
-        window.platformModule = {
-            platformState: {
-                iOSVersion: 170201,
-                hasPAC: true,
-                qn: true
-            }
+        window.log = function (text) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += `> ${text}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
         };
 
-        async function start() {
-            console.log("Starting...");
-            // Завантажуємо Variant B напряму
-            const response = await fetch('Stage3_VariantB.js');
-            const script = await response.text();
-            // Прибираємо перевірки з коду файлу
-            const patched = script.replace(/platformState\.iOSVersion\s*>=?\s*\d+/g, "true");
-            new Function(patched)();
-            console.log("Exploit launched!");
+        window.globalThis = window;
+
+        // Ініціалізація менеджера модулів (залишаємо як в оригіналі)
+        globalThis.moduleManager = (function () {
+            let MM = {
+                "57620206d62079baad0e57e6d9ec93120c0f5247": m_57620206d62079baad0e57e6d9ec93120c0f5247,
+                "14669ca3b1519ba2a8f40be287f646d4d7593eb0": m_14669ca3b1519ba2a8f40be287f646d4d7593eb0,
+            };
+            const e = { "$": "", "p": "cecd08aa6ff548c2" };
+            function c(M) {
+                if (!(M in e)) { e[M] = MM[M](); }
+                return e[M];
+            }
+            return {
+                setBaseUrl: (url) => { e.$ = url; },
+                getModuleByName: c,
+                getModuleByURL: async function (id) {
+                    window.log(`Loading: ${id}...`);
+                    if (!(id in e) && !(id in MM)) {
+                        const r = await fetch(id + ".js");
+                        const code = await r.text();
+                        // Патч на льоту: змушуємо Stage3B ігнорувати перевірки версій
+                        const patchedCode = code.replace(/platformState\.iOSVersion\s*>=?\s*\d+/g, "true");
+                        e[id] = new Function(patchedCode)();
+                    }
+                    return c(id);
+                }
+            };
+        })();
+
+        async function runExploit() {
+            document.getElementById('pbtn').disabled = true;
+            window.log("Initializing for A16...");
+
+            try {
+                const utility = globalThis.moduleManager.getModuleByName("57620206d62079baad0e57e6d9ec93120c0f5247");
+                const platform = globalThis.moduleManager.getModuleByName("14669ca3b1519ba2a8f40be287f646d4d7593eb0");
+
+                // Форсуємо налаштування під твій пристрій
+                platform.platformState.iOSVersion = 170201; 
+                platform.platformState.hasPAC = true;
+
+                globalThis.moduleManager.setBaseUrl(""); 
+
+                window.log("Step 1: WASM Primitives...");
+                const stage1 = await globalThis.moduleManager.getModuleByURL("Stage1_16.6_17.2.1_cassowary");
+                await stage1.si();
+                
+                window.log("Step 2: PAC Bypass...");
+                // На A16/17.2.1 ми використовуємо Stage2 Seedbell
+                await (await globalThis.moduleManager.getModuleByURL("Stage2_16.6_17.2.1_seedbell_pre")).ul();
+                const pac = await globalThis.moduleManager.getModuleByURL("Stage2_17.0_17.2.1_seedbell");
+                platform.platformState.pacBypass = pac.ga();
+
+                window.log("Step 3: Sandbox Escape...");
+                // Вантажимо Variant B, бо він стабільніший на A16
+                const stage3 = await globalThis.moduleManager.getModuleByURL("Stage3_VariantB");
+                const result = await stage3.lA();
+
+                window.log("RESULT: " + result);
+            } catch (err) {
+                window.log("ERR: " + err.message);
+                document.getElementById('pbtn').disabled = false;
+            }
         }
     </script>
-</head>
-<body style="background: #000; color: #fff; text-align: center; font-family: sans-serif;">
-    <h1>iPhone 14 Pro (17.2.1)</h1>
-    <button onclick="start()" style="padding: 20px; font-size: 20px;">Jailbreak Me</button>
 </body>
 </html>
