@@ -18,7 +18,7 @@
  *   - "PSNMWj" : Selected when CPU_TYPE_ARM64 (0x0100000C) Mach-O is found (iOS device offsets).
  */
 
-var m_14669ca3b1519ba2a8f40be287f646d4d7593eb0 = (moduleManager) => {
+var m_14669ca3b1519ba2a8f40be287f646d4d7593eb0 = function(moduleManager) {
   let r = {};
 
   /**
