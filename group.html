@@ -2,23 +2,26 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Coruna Stage 1</title>
+    <title>Coruna Interface</title>
     <style>
         body { background: #000; color: #0f0; font-family: monospace; padding: 15px; font-size: 12px; }
         #log { border: 1px solid #333; padding: 10px; background: #050505; min-height: 400px; white-space: pre-wrap; }
-        .success { color: #0f0; } .error { color: #f55; } .warn { color: #fb0; }
+        .success { color: #0f0; } .error { color: #f55; } .info { color: #0af; }
     </style>
 </head>
 <body>
-    <div id="log">Ініціалізація...</div>
+    <div id="log">Запуск ініціалізації...</div>
 
     <script src="utility_module.js"></script>
     <script src="platform_module.js"></script>
 
     <script>
         const logDiv = document.getElementById('log');
-        window.log = (msg, cls = '') => {
-            logDiv.innerHTML += `<div class="${cls}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+        window.log = (msg, cls = 'info') => {
+            const div = document.createElement('div');
+            div.className = cls;
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logDiv.appendChild(div);
             window.scrollTo(0, document.body.scrollHeight);
         };
 
@@ -26,42 +29,53 @@
             constructor() { this.modules = new Map(); }
             registerModule(id, factory) {
                 try {
-                    this.modules.set(id, factory(this));
-                    log("Зареєстровано: " + id.substring(0, 8), "success");
-                } catch(e) { log("Помилка реєстрації " + id.substring(0,8) + ": " + e, "error"); }
+                    // Виклик фабрики з твого файлу
+                    const instance = factory(this);
+                    this.modules.set(id, instance);
+                    log(`Модуль зареєстровано: ${id.substring(0, 8)}`, "success");
+                } catch(e) {
+                    log(`Помилка в ${id.substring(0,8)}: ${e.message}`, "error");
+                }
             }
             getModuleByName(id) { return this.modules.get(id); }
         }
 
         async function start() {
-            log("Запуск менеджера...");
+            log("Створення глобального менеджера...");
             const mm = new ModuleManager();
             globalThis.moduleManager = mm;
 
-            // Підключення твоїх функцій
-            if (typeof m_57620206d62079baad0e57e6d9ec93120c0f5247 !== 'undefined')
-                mm.registerModule("57620206d62079baad0e57e6d9ec93120c0f5247", m_57620206d62079baad0e57e6d9ec93120c0f5247);
-            
-            if (typeof m_14669ca3b1519ba2a8f40be287f646d4d7593eb0 !== 'undefined')
-                mm.registerModule("14669ca3b1519ba2a8f40be287f646d4d7593eb0", m_14669ca3b1519ba2a8f40be287f646d4d7593eb0);
-
+            // Спроба підключити твої змінні let
             try {
+                if (typeof m_57620206d62079baad0e57e6d9ec93120c0f5247 !== 'undefined') {
+                    mm.registerModule("57620206d62079baad0e57e6d9ec93120c0f5247", m_57620206d62079baad0e57e6d9ec93120c0f5247);
+                } else {
+                    log("Utility module не знайдено в пам'яті.", "error");
+                }
+
+                if (typeof m_14669ca3b1519ba2a8f40be287f646d4d7593eb0 !== 'undefined') {
+                    mm.registerModule("14669ca3b1519ba2a8f40be287f646d4d7593eb0", m_14669ca3b1519ba2a8f40be287f646d4d7593eb0);
+                } else {
+                    log("Platform module не знайдено в пам'яті.", "error");
+                }
+
                 const platform = mm.getModuleByName("14669ca3b1519ba2a8f40be287f646d4d7593eb0");
                 if (platform) {
-                    log("Виявлення версії iOS...", "warn");
-                    if (platform.An) platform.An(); // Налаштування прапорців версії
-                    
-                    log("Спроба знайти JSC base (Stage 1)...", "warn");
-                    await platform.run(); 
+                    log("Запуск platform.run()...");
+                    // Перевірка наявності ініціалізатора An (як у твоєму файлі)
+                    if (platform.An) {
+                        log("Налаштування прапорців версії...");
+                        platform.An();
+                    }
+                    await platform.run();
                 }
             } catch (e) {
-                log("ПОМИЛКА: " + e.message, "error");
-                if (e.message.includes("ba712e")) {
-                    log("УВАГА: Потрібен модуль Mach-O (ba712e...). Пошукай його в репозиторії.", "error");
-                }
+                log("Критична зупинка: " + e.message, "error");
+                console.error(e);
             }
         }
 
+        // Чекаємо завантаження скриптів
         window.onload = () => setTimeout(start, 500);
     </script>
 </body>
