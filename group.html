@@ -1,34 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
-    <title>Exploit Stage</title>
-    <script src="utility_module.js"></script>
-    <script src="platform_module.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jailbreak Stage 1</title>
+    <style>
+        body { background-color: #1a1a1a; color: #00ff00; font-family: monospace; padding: 20px; }
+        #console { width: 100%; height: 300px; border: 1px solid #333; overflow-y: auto; background: #000; padding: 10px; }
+        .error { color: #ff4444; }
+        .success { color: #44ff44; }
+    </style>
 </head>
 <body>
-    <div id="log">Запуск...</div>
+    <h2>Coruna14 Pro: Console</h2>
+    <div id="console">Ініціалізація системи...</div>
+
+    <script src="utility_module.js"></script>
+    <script src="platform_module.js"></script>
 
     <script>
         // Функція для виводу повідомлень на екран iPhone
-        window.log = function(msg) {
-            document.getElementById('log').innerHTML += "<br>" + msg;
-        };
-
-        try {
-            // 1. Створюємо менеджер, який об'єднає файли
-            // (Тут має бути код класу ModuleManager, який ми бачили раніше)
-            
-            // 2. Реєструємо твої файли за їхніми номерами ID
-            // m_5762... — це назва функції всередині твого utility_module.js
-            moduleManager.registerModule("57620206d62079baad0e57e6d9ec93120c0f5247", m_57620206d62079baad0e57e6d9ec93120c0f5247);
-            moduleManager.registerModule("14669ca3b1519ba2a8f40be287f646d4d7593eb0", m_14669ca3b1519ba2a8f40be287f646d4d7593eb0);
-
-            // 3. Запускаємо!
-            const platform = moduleManager.getModuleByName("14669ca3b1519ba2a8f40be287f646d4d7593eb0");
-            platform.run(); // Це почне пошук вразливості
-        } catch(e) {
-            window.log("Помилка: " + e);
+        const consoleElement = document.getElementById('console');
+        function log(msg, type = '') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            consoleElement.appendChild(div);
+            consoleElement.scrollTop = consoleElement.scrollHeight;
         }
-    </script>
-</body>
-</html>
+
+        // Клас менеджера модулів (те, що зв'язує JS файли)
+        class ModuleManager {
+            constructor() {
+                this.modules = new Map();
+            }
+            registerModule(id, moduleFunc) {
+                const module = moduleFunc(this);
+                this.modules.set(id, module);
+                log(`Модуль ${id.substring(0,8)}... зареєстровано`);
+            }
+            getModuleByName(id) {
+                return this.modules.get(id);
+            }
+        }
+
+        async function startExploit() {
+            try {
+                log("Створення менеджера модулів...");
+                const moduleManager = new ModuleManager();
+                globalThis.moduleManager = moduleManager;
+
+                // 2. Реєстрація завантажених файлів
+                // Перевіряємо, чи функції m_... доступні (вони мають бути у т
